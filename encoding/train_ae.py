@@ -21,8 +21,8 @@ class Trainer:
 
         # dataset
         self.train_dataset, self.val_dataset, self.num_class, class_names = dataset_builder(args)
-        self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=args.bs, shuffle=True, num_workers=8, pin_memory=True)
-        self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=1, shuffle=False, num_workers=8, pin_memory=True)
+        self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=args.bs, shuffle=True, num_workers=args.num_workers, pin_memory=True)
+        self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True)
         self.iou_class_names = class_names
 
         # model & optimizer
@@ -44,7 +44,7 @@ class Trainer:
         self.loss_fns['lovasz'] = None
 
     def train(self):
-        for epoch in range(30000):
+        for epoch in range(10): # 20 par defaut
             self.epoch = self.start_epoch + epoch + 1
                 
             print('Training...')
@@ -60,8 +60,11 @@ class Trainer:
 
     def _loss(self, vox, query, label, losses, coord):
         empty_label = 0.
+        #print(3)
         preds = self.model(vox, query) # [bs, N, 20]
+        #print(4)
         losses['ce'] = self.loss_fns['ce'](preds.view(-1, self.num_class), label.view(-1,))
+        #print(5)
         losses['loss'] = losses['ce']
         
         pred_output = torch.full((preds.shape[0], vox.shape[1], vox.shape[2], vox.shape[3], self.num_class), fill_value=empty_label, device=preds.device)
@@ -78,25 +81,28 @@ class Trainer:
     
     def _train_model(self):
         self.model.train()
-
         total_losses = {loss_name: 0. for loss_name in self.loss_fns.keys()}
         total_losses['loss'] = 0.
         evaluator = SSCMetrics(self.num_class, [])
+        #print(10)
         dataloader_tqdm = tqdm(self.train_dataloader)
-
+        #print(11)
         for vox, query, label, coord, path, invalid in dataloader_tqdm:
+            #print(0)
             vox = vox.type(torch.LongTensor).cuda()
             query = query.type(torch.FloatTensor).cuda()
             label = label.type(torch.LongTensor).cuda()
             coord = coord.type(torch.LongTensor).cuda()
             invalid = invalid.type(torch.LongTensor).cuda()
             b_size = vox.size(0)  # TODO: bsize is correct?
+            #print(1)
 
             # forward
             losses = {}
             with autocast():
                 losses, model_output, adaptive_weight = self._loss(vox, query, label, losses, coord)
 
+            
             # optimize
             self.optimizer.zero_grad()
             self.grad_scaler.scale(losses['loss']).backward()
@@ -104,7 +110,6 @@ class Trainer:
             grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)  # gradient clipping
             self.grad_scaler.step(self.optimizer)
             self.grad_scaler.update()
-
             # eval and log each iteration
             if self.global_step % self.args.display_period == 0:
                 pred_mask = get_pred_mask(model_output)
@@ -128,7 +133,7 @@ class Trainer:
             # loss accumulation for logging
             for loss_name in losses.keys():
                 total_losses[loss_name] += (losses[loss_name] * b_size)
-
+            
             self.global_step += 1
 
         # eval for 1 epoch

@@ -9,9 +9,10 @@ def get_args():
     parser.add_argument("--mlp_hidden_channels", type=int, default=256, help="mlp hidden dimension")
     parser.add_argument("--mlp_hidden_layers", type=int, default=4, help="mlp hidden layers")
     parser.add_argument("--padding_mode", default='replicate')
-    parser.add_argument("--bs", type=int, default=4, help="batch size for autoencoding training")
+    parser.add_argument("--bs", type=int, default=15, help="batch size for autoencoding training")
     parser.add_argument("--dataset", default='kitti', choices=['kitti', 'carla'])
     parser.add_argument("--z_down", default=False)
+    parser.add_argument("--num-workers", default=8)
 
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--lr_scheduler", default=True)
@@ -27,6 +28,8 @@ def get_args():
     parser.add_argument("--triplane", type=bool, default=True, help="use triplane feature, if False, use bev feature")
     parser.add_argument("--pos", default=True, type=bool)
     parser.add_argument("--voxel_fea", default=False, type=bool, help="use 3d voxel feature")
+    parser.add_argument("--debug", action="store_true")
+
     args = parser.parse_args()
     return args
 
@@ -39,6 +42,10 @@ def main():
     elif args.dataset == 'kitti':
         args.data_path=SEMKITTI_DATA_PATH
         args.yaml_path=SEMKITTI_YAML_PATH
+    
+    if args.debug :
+        args.num_workers = 0
+        
  
     trainer = Trainer(args)
     trainer.train()

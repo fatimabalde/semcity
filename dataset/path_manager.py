@@ -2,8 +2,8 @@ import os
 
 # manual definition
 PROJECT_NAMES = 'SemCity' 
-SEMKITTI_DATA_PATH = '' # the path to the sequences folder
-CARLA_DATA_PATH = '' # the path to the sequences folder
+SEMKITTI_DATA_PATH = '/home/fbalde/scratch/datasets/semantic_kitti/dataset/sequences' # the path to the sequences folder
+CARLA_DATA_PATH = '' # the path to the sequences folder~/scratch/datasets/semantic_kitti/dataset/sequences
 
 # auto definition
 CARLA_YAML_PATH = os.getcwd() + '/dataset/carla.yaml'

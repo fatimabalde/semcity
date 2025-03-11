@@ -51,8 +51,11 @@ class SemKITTI(data.Dataset):
         for i_folder in split:
             # velodyne path corresponding to voxel path
             complete_path = os.path.join(args.data_path, str(i_folder).zfill(2), folder)
+            #print(pathlib.Path(complete_path))
             files = list(pathlib.Path(complete_path).glob('*.label'))
+            #print(files)
             for filename in files:
+                #print(filename)
                 if (imageset == 'val') :
                     if (int(str(filename).split('/')[-1].split('.')[0]) % 5 == 0) :
                         self.im_idx.append(str(filename))

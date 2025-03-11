@@ -2,3 +2,7 @@ __pycache__/
 tb/
 *.egg-info/
 .idea/
+
+# folders
+test/
+exp/
